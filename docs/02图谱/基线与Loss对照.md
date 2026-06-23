@@ -1,8 +1,8 @@
 # LLM OPD Papers: Baselines / Sampled-Token OPD / Loss Map
 
-更新时间：2026-06-09
+更新时间：2026-06-22
 
-来源：基于 `docs/LLM_OPD失败模式_机制归因_算法改进映射.md` 中 26 篇论文、本地 PDF、以及已有 `docs/问答记录.md` / `docs/后续问答记录.md` 重新整理。未进行 web search。
+来源：基于 `docs/02图谱/失败模式映射.md`、`docs/01筛选/论文筛选.md`、本地 PDF、以及已有问答记录重新整理。未进行 web search。
 
 ## 口径
 
@@ -54,6 +54,109 @@ $$
 - **明确 sampled-token / 单样本 log-ratio OPD 为核心**：`2602.12125`, `2603.11137`, `2604.03128` 的 RLSD, `2604.13010`, `2604.13016` 的部分实验, `2605.03677`, `2605.06387` 的 OPD 分支, `2605.10781` 的 RLRT。
 - **on-policy rollout 但不是严格 sampled-token**：`2601.18734`, `2601.20802`, `2602.12275`, `2603.07079`, `2604.04461`, `2604.10688`, `2604.14084`, `2605.01347`, `2605.06597`。这些通常使用 full-vocab KL、top-k KL、weighted branch loss、或多组件 self-distillation。
 - **不是 token-level white-box OPD**：`2604.03873` SODA 是 DPO preference；`2605.07396` ROPD 是 rubric/GRPO response reward；`2604.00626` 是 survey。
+
+2026-05+ 增量 59 篇里，严格以 sampled-token log-ratio / K1 / token-level advantage 为核心的论文约 **15 篇**；**18 篇**属于混合或部分 sampled-token，即比较多种 OPD 形式、只把 sampled-token 信号当权重，或只改 rollout / pipeline 但底层可接 sampled-token OPD；**23 篇**主要是 full-vocab / top-k / subset KL、trajectory / semantic signal 或 teacher-schedule 变体；**3 篇**是分析或综述型，不对应单一训练 loss。
+
+## 2026-05+ 增量 59 篇 OPD 形式统计
+
+### 统计口径
+
+本节只统计 `docs/01筛选/论文筛选.md` 中“2026-05+ 增量筛选更新（仅五类）”保留的 59 篇论文。
+
+`是否 sampled-token` 使用四档：
+
+- **是**：student rollout 后，在实际采样 token 上使用 teacher/student log-prob、log-ratio、K1 estimator、token-level advantage 或 token-level reweighting。
+- **否**：虽然可能在 student prefix 上训练，但 loss 是 full-vocabulary KL、top-k / subset KL、teacher top-1 CE、trajectory-level / chunk-level / rubric / semantic objective，或只改 teacher schedule / rollout source。
+- **混合/部分**：论文比较多种 OPD 形式，或主方法把 sampled-token 信号和 full-vocab/top-k KL、GRPO、trajectory routing、freshness/cache 控制组合使用。
+- **不适用/分析型**：综述、诊断或机制分析论文，没有单一训练 objective。
+
+`loss 形式`按论文主方法或最核心实验记录，不把“on-policy token-level”自动等同于 sampled-token。
+
+### 是否 sampled-token 汇总
+
+| 类别 | 数量 | 论文 |
+|---|---:|---|
+| **是** | 15 | `2605.07865`, `2605.08737`, `2605.11739`, `2605.12483`, `2605.28396`, `2605.30833`, `2605.31490`, `2606.01039`, `2606.02684`, `2606.09304`, `2606.17199`, `2606.00172`, `2606.11709`, `2605.23493`, `2605.21851` |
+| **混合/部分** | 18 | `2605.11182`, `2605.16826`, `2606.07082`, `2605.07804`, `2605.17862`, `2605.25582`, `2606.01249`, `2606.04036`, `2605.11609`, `2605.12652`, `2605.18529`, `2605.22263`, `2605.26844`, `2606.18810`, `2605.28791`, `2606.00755`, `2606.02530`, `2606.10385` |
+| **否** | 23 | `2605.22731`, `2605.30070`, `2605.19433`, `2605.27028`, `2606.00305`, `2606.08432`, `2606.09471`, `2605.09725`, `2605.13230`, `2605.31159`, `2606.03532`, `2605.10194`, `2605.17497`, `2605.21606`, `2606.15576`, `2605.11458`, `2605.15113`, `2605.22675`, `2605.28014`, `2606.01476`, `2606.03089`, `2606.11627`, `2606.19327` |
+| **不适用/分析型** | 3 | `2605.10889`, `2605.18141`, `2605.11613` |
+
+### loss 形式聚合
+
+下面几类是非互斥统计，因为不少论文同时有 OPD loss、RLVR loss、filter / gate / schedule。
+
+| loss 形式 | 覆盖情况 | 代表论文 | 说明 |
+|---|---:|---|---|
+| sampled-token log-ratio / K1 / PG advantage | 核心 15 篇，另有若干混合 | `2605.07865`, `2605.28396`, `2606.01039`, `2606.02684`, `2606.17199`, `2606.09304`, `2606.00172`, `2606.11709`, `2605.23493` | 只在 student sampled token 上使用 teacher/student 概率差，常作为 policy-gradient reward、advantage 或权重。 |
+| full-vocab / top-k / subset KL 显式 loss | 约 20+ 篇 | `2605.11182`, `2605.16826`, `2605.27028`, `2606.09471`, `2606.04036`, `2606.19327`, `2605.10194` | 每个 prefix 上匹配一个分布，可能是全词表、top-k、span/subset 或 tail-bucket。 |
+| trajectory / horizon / prefix 控制 | 约 10 篇 | `2605.07804`, `2605.27028`, `2605.28396`, `2605.31490`, `2606.00305`, `2606.08432`, `2606.09471` | 主要改 rollout 长度、prefix reliability、near-future trajectory、termination 或 refinement，不一定改底层 KL。 |
+| trust-region / clipping / estimator transform | 约 10 篇 | `2605.07865`, `2605.08737`, `2605.25582`, `2606.01039`, `2606.01249`, `2606.09304`, `2606.17199` | 重点是稳定 sampled estimator、outlier、clip-safe region、trust region 或 extrapolation。 |
+| token / step / path reweighting 或 routing | 约 15 篇 | `2605.10194`, `2605.21606`, `2605.21851`, `2606.00172`, `2606.11709`, `2606.15576`, `2606.18810` | teacher signal 不一定直接作为 loss，可能只决定 token 权重、方向翻转、span routing 或 path credit。 |
+| logit-free / semantic / rubric / feedback signal | 约 7 篇 | `2605.15113`, `2605.28014`, `2606.01476`, `2606.03089`, `2606.19327`, `2605.07396` | 用 language feedback、reflection、constitution、rubric、semantic chunk 等替代 teacher logits 或 CoT。 |
+
+### 增量逐篇对照表
+
+| arXiv | 论文 / 方法 | 类型 | 是否 sampled-token | loss 形式 / objective | 备注 |
+|---|---|---|---|---|---|
+| `2605.10889` | Unmasking OPD | 机制综述 / 统一视角 | **不适用/分析型** | offline gradient-alignment diagnostic；比较主要 distillation objective 的局部梯度 | 不是训练算法；评估 teacher signal 是否对齐 ideal success gradient。 |
+| `2605.11182` | The Many Faces of OPD | 综述 / taxonomy + 机制 | **混合/部分** | full-vocab KL、sampled-token PG、TopK RKL、stop-gradient TopK 等设计空间 | 实证比较多种 OPD / OPSD loss；不是单一 loss。 |
+| `2605.18141` | A Brief Overview: OPSD in LLMs | 综述 / taxonomy | **不适用/分析型** | OPSD taxonomy；概念上是 per-token divergence | 无单一实验 loss。 |
+| `2605.22731` | Post-Training is About States, Not Tokens | 机制理论 / 统一视角 | **否** | continuation-based OPD；teacher continuation CE / local supervision | 强调 supervision state；不是 sampled-token estimator 论文。 |
+| `2605.16826` | Decoupling KL and Trajectories | 机制理论 / 统一视角 | **混合/部分** | prefix source x KL direction framework；FKL/RKL on teacher/student prefixes | 主实验使用 exact full-vocab KL，也讨论 RKL 的 sampled-token PG 解释。 |
+| `2605.12483` | Sparse-to-Dense Reward Principle | 机制 recipe | **是** | FKL warmup + OPD as sampled-token dense teacher reward | OPD stage 明确解释为 student-sampled token 上的 teacher-student likelihood-ratio reward。 |
+| `2605.11739` | Learning to Foresee / EffOPD | 机制实验 + 加速 | **是** | sampled-token OPD immediate log-ratio gradient + directional extrapolation | 论文分析 OPD update geometry；实现命令使用 reverse-KL advantage。 |
+| `2605.30070` | Predictive Law for OPSD from World Feedback | 机制预测 | **否** | per-token reverse-KL OPSD；top-k 20 distillation | 关注 student-self-teacher gap predictive law，不是 sampled-token estimator。 |
+| `2606.07082` | Geometry of OPD | 几何分析 | **混合/部分** | OPD/SFT/RLVR parameter-space diagnostics；sampled-token gap 与 objective interpolation | 分析不同 OPD variants，不绑定单一 loss。 |
+| `2605.07804` | Prune-OPD | 长轨迹 / prefix drift | **混合/部分** | OPD reward tensor 乘 prefix reliability weight；top-k overlap / action acceptance | 改 reliability 权重和 suffix pruning；底层可接 top-k reward tensor 或 sampled-token advantage。 |
+| `2605.17862` | f-OPD | 长轨迹 / freshness 稳定化 | **混合/部分** | freshness-weighted distillation loss + rollout-anchored regularizer + adaptive refresh | 作用于异步 OPD buffer；核心是 freshness/cache drift control。 |
+| `2605.19433` | MOTAB / Backtracking | 长轨迹 / exposure bias | **否** | trajectory monitoring + backtracking + teacher corrective suffix；对照 top-k OPD | 主方法偏数据合成 / trajectory correction，不是 sampled-token KL estimator。 |
+| `2605.27028` | ESR / Early Stopping Rollout | 长轨迹 / rollout horizon | **否** | standard reverse-KL OPD restricted to early rollout window | 不改 OPD loss，只截断 supervised horizon；论文公式是 prefix 上的 distribution KL。 |
+| `2605.28396` | ADWIN | 长轨迹 / adaptive window | **是** | sampled-token immediate log-ratio OPD + prefix-window / delayed full-rollout alignment | 底层是 sampled token local reward；方法核心是 adaptive horizon。 |
+| `2605.30833` | LGR / Supervision Fidelity Decay | 长轨迹 / supervision decay | **是** | sampled-token RKL advantage + one-step-ahead confidence reward | 在 sampled student token 上加 confidence reward；高熵位置用 top-k candidate 估计。 |
+| `2605.31490` | POPD / TOPD | 长轨迹 / horizon control | **是** | token-level OPD gradient on truncated / progressive rollout horizon | 明确用 immediate token-level log-ratio reward，只改 rollout horizon。 |
+| `2606.00305` | Near-Future Guidance / TOPD | 长轨迹 / trajectory bridge | **否** | vanilla reverse-KL OPD + OT-aligned near-future KL target | 增加 trajectory-level soft target，不是 sampled-token log-ratio estimator。 |
+| `2606.08432` | TRD / Trajectory-Refined Distillation | 长轨迹 / trajectory refinement | **否** | refined trajectory 上的 full-vocab forward KL；对照 raw rollout FKL/RKL/top-k | 先 refine trajectory 再做 per-token KL，主 loss 是分布匹配。 |
+| `2606.09471` | KAT / KL Agreement Trap | 长轨迹 / KL agreement failure | **否** | pure OPD reverse KL + softmax vocabulary loss；KL-based suffix termination | 复用 full/top-k reverse KL，不改为 sampled-token estimator。 |
+| `2605.07865` | vOPD / KL for a KL | 优化稳定性 / 方差 | **是** | sampled-token reverse-KL PG estimator + detached full/top-k KL control-variate baseline | 目标保持 single-sample estimator，无偏降方差。 |
+| `2605.08737` | Extrapolation Cliff / ListOPD | 优化稳定性 / 理论边界 | **是** | base-relative sampled-token/listwise ExOPD reward extrapolation + IS clipping | 针对 structural sampled tokens 的 clip-safe threshold。 |
+| `2605.09725` | BRTS | teacher rollout selection | **否** | student-context top-k RKL + teacher-context top-k FKL/RKL auxiliary branch | 两个 top-k aggregation loss；不是 sampled-token log-ratio。 |
+| `2605.13230` | TGPO | large divergence / teacher guidance | **否** | teacher top-1 directional guidance CE + GRPO + reference KL | 在 student prefix 上模仿 teacher argmax token，不是 sampled sampled-token KL。 |
+| `2605.25582` | Extreme Region Policy Distillation | off-policy reuse / trust region | **混合/部分** | weakly constrained off-policy optimization + KL-constrained distillation / token reward signal | 两阶段 policy distillation，含 token reward signal，但不是标准 sampled-token OPD。 |
+| `2605.31159` | Trust-Region Behavior Blending | trust region / rollout behavior | **否** | per-prefix reverse-KL OPD loss unchanged；teacher-guided behavior policy warmup | 改 rollout behavior policy，不改 loss；loss 是 top-k reverse KL。 |
+| `2606.01039` | OPD+ | advantage design | **是** | f-divergence OPD sampled-token estimator + corrected stop-gradient advantage | 重点是 sampled-token objective 与正确梯度。 |
+| `2606.01249` | TrOPD | trust region / outlier handling | **混合/部分** | trust-region K1 RKL + outlier top-k FKL + off-policy guidance FKL | trust 区域用 sampled K1，outlier 和 guidance 用 top-k / teacher-prefix FKL。 |
+| `2606.02684` | FiRe-OPD | filter / reweight | **是** | trajectory filtering + token-level soft weights on sampled-token OPD advantage | 先筛 trajectory，再把 sampled-token log-ratio advantage 按 teacher confidence / student confusion 加权。 |
+| `2606.03532` | CGTR / When Should the Teacher Move? | teacher schedule | **否** | RL objective + top-k JSD distillation；state-aware hard teacher refresh | 研究 self-teacher refresh schedule，不是 sampled-token objective。 |
+| `2606.04036` | SDPG | PG connection / KL regularized policy optimization | **混合/部分** | exact full-vocabulary reverse-KL OPD + equivalent centered log-ratio PG interpretation | 实现用 explicit full-vocab KL；sampled-token PG 是梯度解释和对照。 |
+| `2606.09304` | SG-OPD | sign gating | **是** | sampled-token RKL advantage + sign-consistency gate + phased teacher sampling | 在 sampled token 上根据 verifier sign 过滤 teacher signal。 |
+| `2606.17199` | PowerOPD | estimator transform | **是** | sampled-token log-ratio reward with bounded power / Box-Cox transform | 直接修正 unbounded log-ratio sampled-token reward。 |
+| `2605.10194` | TRACE | token routing | **否** | span-routed FKL/RKL/skip + GRPO；per-vocabulary KL clipped and decayed | token/span subset KL，不是 sampled-token log-ratio。 |
+| `2605.11609` | AntiSD via PMI | token credit / anti-self-distillation | **混合/部分** | sampled-token conditional PMI interpretation + JSD ascent / entropy gate | 使用 sampled-token 信号解释与反向处理，但主框架含 JSD/gating。 |
+| `2605.11613` | Input-Specific Credit | credit 机制分析 | **不适用/分析型** | credit-assignment diagnostic；generic vs input-specific credit | 不是训练算法。 |
+| `2605.12652` | Multi-Rollout OPD / MOPD | multi-rollout teacher context | **混合/部分** | peer-conditioned full/token distribution KL；math 用 RKL，其他用 JSD | student rollout 上训练，但 loss 是 teacher distribution divergence。 |
+| `2605.17497` | SSOPD | correct-wrong witness | **否** | GRPO + pointwise-clipped forward KL on wrong prefixes using successful witness | full-vocab FKL auxiliary loss，不是 sampled-token log-ratio。 |
+| `2605.18529` | AMR-SD | meta-reflective credit | **混合/部分** | meta-reflective self-distillation + token-level credit | 依赖 reflection 信号，文档中未归为严格 sampled-token KL。 |
+| `2605.21606` | Position-Weighted OPSD | position / reliability weighting | **否** | position/reliability-weighted OPSD KL | weighted KL distribution，不是 sampled-token estimator。 |
+| `2605.21851` | OPPO | Bayesian value recursion | **是** | GRPO direction anchored by token-level log-ratio / Bayesian value recursion | sampled token log-ratio 作为 Bayesian evidence，方向由 GRPO/verifier anchor。 |
+| `2605.22263` | Direction-Adaptive Self-Distillation | direction adaptive | **混合/部分** | aptitude-conditioned direction routing between imitation and self-distillation | 不绑定单一 estimator。 |
+| `2605.26844` | Token Teachability | teachability filtering | **混合/部分** | teachability-filtered token distillation / disagreement selection | token subset and disagreement filtering，不严格等同 sampled-token。 |
+| `2606.00172` | CAST | asymmetric self-teaching | **是** | GRPO/DAPO objective with sampled-token teacher-student gap shaping and sign reversal | sampled rollout token 上计算 teacher-student gap，改 token advantage。 |
+| `2606.11709` | RLCSD | contrastive privileged signal | **是** | sampled-token contrastive signal modulates verifier advantage in PPO-style loss | 明确区别于 full-logit distill；teacher signal 只调 token-level magnitude。 |
+| `2606.15576` | HSD / Path-Conditioned Self-Distillation | path-conditioned credit | **否** | path-conditioned teacher distribution / endpoint context replacement | 重点是 peer path context 与 per-token distribution matching。 |
+| `2606.18810` | SC-GRPO | self-conditioned credit | **混合/部分** | token-level KL used as multiplicative weight on GRPO gradient；additive KL loss为负例 | 不是把 KL 作为主 loss，而是用 KL 权重重分配 sampled token 更新。 |
+| `2605.11458` | ATESD | adaptive teacher exposure | **否** | privileged-context exposure controller + KL distillation | 控制 teacher exposure，不是 sampled-token estimator。 |
+| `2605.15113` | VPD | language feedback / variational distillation | **否** | variational EM self-distillation；feedback-aware teacher + KL / trust-region distillation | dense teacher distribution / variational objective。 |
+| `2605.22675` | SPD | capability subspace | **否** | capability-selective subspace projection + SFT/self-generated outputs | 不是标准 OPD KL sampled-token。 |
+| `2605.23493` | EDGE-OPD | evidence-guided privileged signal | **是** | sampled-token reverse-KL / K1 OPD with positive-evidence mask + KL anchor | 论文明确采用 sampled-token reverse-KL OPD recipe。 |
+| `2605.28014` | ROSD | reflective OPSD | **否** | reflection-conditioned teacher + localized / top-k distillation | top-k distillation，不是 sampled-token。 |
+| `2605.28791` | Skill-Gated Self-Distillation | skill-gated | **混合/部分** | skill-conditioned gate on self-distillation loss | 主要是 gate，不足以归为严格 sampled-token。 |
+| `2606.00755` | Policy Reheater | entropy internalization | **混合/部分** | OPSD/RLVR post-stage to internalize temperature / entropy | 后处理式 reheating，loss 口径依具体 OPSD/RLVR 组件。 |
+| `2606.01476` | OmniOPD | logit-free / semantic chunk | **否** | chunk-level Bayesian semantic loss + token-level reference KL anchor | logit-free chunk-level signal，不是 teacher log-prob on sampled token。 |
+| `2606.02530` | SafeSteer | safety / localized OPD | **混合/部分** | localized OPD safety alignment on safety-relevant states | 以安全状态定位和局部监督为核心，loss 口径依具体实现。 |
+| `2606.03089` | Constitutional On-Policy Safe Distillation | safety / constitution | **否** | constitution-conditioned semantic teacher signal + on-policy safe distillation | semantic teacher signal，不是 sampled-token KL。 |
+| `2606.10385` | Anchored Residual Guidance | privileged residual | **混合/部分** | anchored residual guidance；distill residual correction instead of full privileged distribution | 可与 sampled/logit 信号组合；核心是 residual/anchor。 |
+| `2606.11627` | When Context Returns / NCA | context-return robustness | **否** | no-context anchoring regularizer + robustness diagnostic | 分析 + consistency regularizer，不是 sampled-token OPD。 |
+| `2606.19327` | RCSD | rubric-conditioned self-distillation | **否** | rubric-conditioned forward KL on student-generated trajectories；FKL/RKL/JSD ablation | on-policy token-level guidance，但主 loss 是 full distribution FKL。 |
 
 ## 逐篇对照表
 

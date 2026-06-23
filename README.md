@@ -23,6 +23,13 @@
 | `docs/03问答/方向力度解耦.md` | 审查 OPD 与 RLVR 的 update direction / magnitude 解耦，比较 RLSD、RLCSD、SC-GRPO、CAST、SG-OPD 等是否做过类似实验。 |
 | `docs/03问答/纠错压缩OPD.md` | 审查 Correction-vs-Compression OPD，比较 OPSD Compresses、SCOPE、RLRT、TRD、ROSD、TRACE 等是否做过类似分析。 |
 | `docs/04想法/方向力度解耦想法.md` | 关于 OPD/RLVR 更新方向和力度排列组合的研究想法。 |
+| `docs/04想法/研究方向与候选想法.md` | OPD 研究方向总纲:当前结论 + live 候选总表、冲顶会的 P 系列(P1-P5)、8 个基础候选库,以及三轮排序(可行性→顶会→核查重排)的演化记录。 |
+| `docs/04想法/OPD方差偏差分解理论.md` | 候选 N1 的完整展开:control-variate 形式化、方差-偏差分解、Cov(teacher,advantage) 实验协议、对应证明,以及经带引用核查后的相关工作与差异化(§9)。经核查 N1 的"统一"被预占,已降级为 P5 的理论附录。 |
+| `docs/04想法/OPD收益归因_方差缩减还是知识迁移.md` | 候选 P5(经核查后重排第一):deflationary 经验归因论文,用 teacher-free 方差缩减对照 + 复现率 ρ + 覆盖集探针,检验 OPD 收益是知识迁移还是方差缩减。(速记版) |
+| `docs/04想法/OPD收益归因_方差缩减还是知识迁移_正式版.md` | 上文的正式书面版:含"术语与记号"逐词定义、完整学术叙述,初读者友好。内容与速记版一致。 |
+| `docs/04想法/OPD收益归因_实验设计.md` | P5 的主实验设计:E1-E4 + 前置三层 kill 闸门、实验先后顺序与依赖图、Qwen3+DAPO-Math+AIME/MATH 选型、ρ 与覆盖集的测量协议、全局公平性控制。(速记版) |
+| `docs/04想法/OPD收益归因_实验设计_正式版.md` | 上文的正式书面版:完整学术叙述、术语解释,初读者友好。内容与速记版一致。 |
+| `docs/04想法/OPD收益归因_执行路线图.md` | P5 的时间有序执行视图:从"什么都没做"的第 1 步(站起评测 harness)到投稿,16 步逐步规划,每步含产物/闸门/失败处理,以及里程碑与 MVP 切片。 |
 
 ## 元数据
 
