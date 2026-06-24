@@ -13,6 +13,7 @@
 | `docs/02图谱/失败模式研究现状.md` | 汇总 OPD failure mode 的研究现状、已解决方向和开放问题。 |
 | `docs/02图谱/基线与Loss对照.md` | 逐篇对照 baseline、loss/objective、是否 sampled-token OPD。 |
 | `docs/02图谱/模型数据评测统计.md` | 统计论文使用的模型、数据集和 benchmark。 |
+| `docs/02图谱/训练资源统计.md` | 统计 110 篇 OPD 论文的训练资源:硬件配置、训练时长(GPU时/step/epoch)、训练规模(batch/rollout/lr/长度)、是否用 LoRA、训练框架,含聚合发现与对 P5 选型的启示。 |
 
 ## 问答与想法
 
